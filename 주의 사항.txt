@@ -1,0 +1,11 @@
+주의사항
+
+glsl 파일은 빌드 작업:내용/출력 디렉터리로 복사:새 버전이면 복사 or 항상 복사로 속성 설정해야함
+
+D:\Git\IDKEngine\IDKEngine\Resource\Shaders\CameraMotionBlur\compute.glsl
+
+cs 파일은 빌드 작업:C#컴파일러/출력 디렉터리로 복사:복사 안함으로 속성 설정
+
+D:\Git\IDKEngine\IDKEngine\Source\Render\CameraMotionBlur.cs
+D:\Git\IDKEngine\IDKEngine\Source\Render\RasterPipeline.cs
+D:\Git\IDKEngine\IDKEngine\Source\Application.cs

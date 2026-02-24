@@ -1,0 +1,71 @@
+#version 460
+layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
+
+layout(rgba8, binding = 0) writeonly uniform image2D uOut;
+
+layout(binding = 0) uniform sampler2D uInput;
+layout(binding = 1) uniform sampler2D uDepth;
+
+// BBG.Cmd.SetUniforms(Settings) 대응용
+layout(std140, binding = 0) uniform GpuSettings
+{
+    float Strength;
+    float MaxBlurPixels;
+    int Samples;
+    int HasDepth;
+
+    mat4 PrevProjView;
+    mat4 InvProjView;
+};
+
+float GetNoise(vec2 screenPos) {
+    return fract(52.9829189 * fract(dot(screenPos, vec2(0.06711056, 0.00583715))));
+}
+
+vec4 SampleColor(vec2 uv) {
+    return textureLod(uInput, clamp(uv, vec2(0.0), vec2(1.0)), 0.0);
+}
+
+void main() {
+    ivec2 px = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(uOut);
+    if (px.x >= size.x || px.y >= size.y) return;
+
+    vec2 uv = (vec2(px) + vec2(0.5)) / vec2(size);
+    float depth01 = (HasDepth != 0) ? clamp(textureLod(uDepth, uv, 0.0).r, 0.0, 1.0) : 1.0;
+
+    float ndcZ = depth01 * 2.0 - 1.0;
+    vec4 currClip = vec4(uv * 2.0 - 1.0, ndcZ, 1.0);
+
+    vec4 world = InvProjView * currClip;
+    world /= max(abs(world.w), 1e-6);
+
+    vec4 prevClip = PrevProjView * vec4(world.xyz, 1.0);
+    prevClip /= max(abs(prevClip.w), 1e-6);
+
+    vec2 prevUv = prevClip.xy * 0.5 + 0.5;
+    vec2 v = (uv - prevUv) * Strength;
+
+    if (depth01 >= 0.9999) v *= 0.5;
+
+    vec2 maxUv = vec2(MaxBlurPixels) / vec2(size);
+    v = clamp(v, -maxUv, maxUv);
+
+    float vlenPixels = length(v * vec2(size));
+    if (vlenPixels < 0.25) {
+        imageStore(uOut, px, SampleColor(uv));
+        return;
+    }
+
+    int n = max(Samples, 1);
+    float dither = GetNoise(vec2(px));
+    vec4 acc = vec4(0.0);
+
+    for (int i = 0; i < n; i++) {
+        float t = (float(i) + dither) / float(n) - 0.5;
+        acc += SampleColor(uv + v * t);
+    }
+    acc /= float(n);
+
+    imageStore(uOut, px, acc);
+}
