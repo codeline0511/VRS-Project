@@ -1,0 +1,3 @@
+amazon lumberyard bistro 들어가서 bistro 다운로드
+blender 다운로드 후 BistroInterior, BistroExterior ftx 파일을 glb 파일로 변형(처음에 나오는 기본 square는 제거)
+IDKEngine 파일 내에 IDKEngine\Resource\Models\BistroCompressed 경로를 가진 파일 만들고 glb 파일 저장
